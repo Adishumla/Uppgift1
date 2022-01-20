@@ -79,10 +79,7 @@ class Button: # Frågas efter
         return GPIO.input(self.__PIN)
 
     def enable_interrupt(self, callback_routine):
-        """
-        Önskad callbackrutin passeras som parameter callback_routine, så att denna kan väljas efter behov.
-        Lade till 200 ms bouncetime för att förhindra påverkan från kontaktstudsar.
-        """
+        
         GPIO.add_event_detect(self.__PIN, GPIO.RISING, callback = callback_routine, bouncetime = 200)
         return
 
@@ -145,12 +142,7 @@ class FSM: # Frågas efter
         return
 
     def run(self):
-        """
-        Aktuellt tillstånd lagras i en lokal variabel state. Möjliga tillstånd är
-        OFF, SLOW, MEDIUM, FAST och ON. Blinkning genereras via metoden blink från 
-        klassen OutputDeviceCollection, anropat via instansvariabeln __device. 
-        Vid fel återställs tillståndsmaskinen via metoden reset.
-        """
+        
         import const
         state = self.__state.current()
         if state == const.OFF: 
