@@ -30,7 +30,7 @@ class OutputDevice:
         else: self.off()
         return
 
-class OutputDeviceCollection: # Frågas efter 
+class OutputDeviceCollection: 
 
     def __init__(self):
         self.__devices = []
@@ -48,30 +48,24 @@ class OutputDeviceCollection: # Frågas efter
         return
 
     def on(self):
-        i = 0
-        while i < self.__number_of_devices:
+        for i in range(0, self.__number_of_devices, 1):
             device = self.__devices[i]
             device.on()
-            i += 1
         return
 
     def off(self):
-        i = 0
-        while i < self.__number_of_devices:
+        for i in range(0, self.__number_of_devices, 1):
             device = self.__devices[i]
             device.off()
-            i += 1
         return
 
 
     def blink(self, delay_time):
-        i = 0
-        while i < self.__number_of_devices:
+        for i in range(0, self.__number_of_devices, 1):
             self.off()
             device = self.__devices[i]
             device.on()
             delay(delay_time)
-            i += 1
         return
 
 class Button: # Frågas efter
@@ -84,9 +78,12 @@ class Button: # Frågas efter
     def is_pressed(self):
         return GPIO.input(self.__PIN)
 
-    def enable_interrupt(self):
-        import interrupts
-        GPIO.add_event_detect(self.__PIN, GPIO.RISING, callback = interrupts.button_pressed)
+    def enable_interrupt(self, callback_routine):
+        """
+        Önskad callbackrutin passeras som parameter callback_routine, så att denna kan väljas efter behov.
+        Lade till 200 ms bouncetime för att förhindra påverkan från kontaktstudsar.
+        """
+        GPIO.add_event_detect(self.__PIN, GPIO.RISING, callback = callback_routine, bouncetime = 200)
         return
 
     def disable_interrupt(self):
@@ -107,11 +104,11 @@ class State:
             self.__state = self.__min
         return  
 
-    #def previous(self):
-     #   self.__state -= 1
-      #  if self.__state < self.__min:
-       #     self.__state = self.__max
-        #return
+    def previous(self):
+        self.__state -= 1
+        if self.__state < self.__min:
+            self.__state = self.__max
+        return
         
     def reset(self):
         self.__state = self.__min
@@ -127,10 +124,8 @@ class FSM: # Frågas efter
         import const
         self.__state = State(const.OFF, const.ON)
         self.__slow_delay = const.SLOW_DELAY
-        #self.__fast_delay = const.FAST_DELAY
-        self.__on_delay = const.ON_DELAY
-        #self.__no_delay = const.NO_DELAY
-
+        self.__medium_delay = const.MEDIUM_DELAY
+        self.__fast_delay = const.FAST_DELAY
         self.__device = device
         return
 
@@ -139,17 +134,35 @@ class FSM: # Frågas efter
         self.run()
         return
 
-    #def previous(self):
-        #self.__state.previous()
-        #self.run()
-        #return
+    def previous(self):
+        self.__state.previous()
+        self.run()
+        return
+
+    def reset(self):
+        self.__state.reset() 
+        self.__device.off()
+        return
 
     def run(self):
+        """
+        Aktuellt tillstånd lagras i en lokal variabel state. Möjliga tillstånd är
+        OFF, SLOW, MEDIUM, FAST och ON. Blinkning genereras via metoden blink från 
+        klassen OutputDeviceCollection, anropat via instansvariabeln __device. 
+        Vid fel återställs tillståndsmaskinen via metoden reset.
+        """
         import const
         state = self.__state.current()
-        if state == const.OFF: self.__device.off()
-        elif state == const.SLOW: self.__device.blink(self.__slow_delay)
-        #elif state == const.FAST: self.__device.blink(self.__fast_delay)
-        elif state == const.ON: self.__device.on()
-        else: self.__state.reset(); self.__device.off()
+        if state == const.OFF: 
+            self.__device.off()
+        elif state == const.SLOW: 
+            self.__device.blink(self.__slow_delay)
+        elif state == const.MEDIUM:
+            self.__device.blink(self.__medium_delay)
+        elif state == const.FAST: 
+            self.__device.blink(self.__fast_delay)
+        elif state == const.ON: 
+            self.__device.on()
+        else: 
+            self.reset()
         return
